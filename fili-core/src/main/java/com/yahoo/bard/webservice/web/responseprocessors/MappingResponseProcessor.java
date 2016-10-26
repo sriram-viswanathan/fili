@@ -13,6 +13,9 @@ import com.yahoo.bard.webservice.async.ResponseException;
 import com.yahoo.bard.webservice.web.DataApiRequest;
 import com.yahoo.bard.webservice.web.ErrorMessageFormat;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectWriter;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,14 +110,32 @@ public abstract class MappingResponseProcessor implements ResponseProcessor {
         return new HttpErrorCallback() {
             @Override
             public void invoke(int statusCode, String reason, String responseBody) {
-                LOG.error(ErrorMessageFormat.ERROR_FROM_DRUID.logFormat(responseBody, statusCode, reason, druidQuery));
+                String druidQueryString;
+                ObjectWriter druidQuerySerializer = getObjectMappers().getMapper().writer();
+                try {
+                    druidQueryString = druidQuerySerializer.writeValueAsString(druidQuery);
+                } catch (JsonProcessingException jse) {
+                    try {
+                        druidQueryString = druidQuery.toString();
+                    } catch (Exception e) {
+                        LOG.warn("Error invoking a druid query's toString.", e);
+                        druidQueryString = "QUERY'S `toString` FAILED";
+                    }
+                    LOG.warn(String.format("Failed to serialize druid query %s", druidQueryString), jse);
+                }
+                LOG.error(ErrorMessageFormat.ERROR_FROM_DRUID.logFormat(
+                        responseBody,
+                        statusCode,
+                        reason,
+                        druidQueryString
+                ));
                 responseEmitter.onError(new ResponseException(
                         statusCode,
                         reason,
                         responseBody,
                         druidQuery,
                         null,
-                        getObjectMappers().getMapper().writer()
+                        druidQuerySerializer
                 ));
             }
         };

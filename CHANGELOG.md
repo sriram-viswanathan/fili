@@ -24,6 +24,8 @@ Current
 
 ### Changed:
 
+- [Error messages generated during response processing include the request id.](https://github.com/yahoo/fili/pull/78)
+
 - [`PhysicalTable` now uses `getAvailableIntervals` internally rather than directly referencing its intervals](https://github.com/yahoo/fili/pull/79)
 
 - [CSV attachment name for multi-interval request now contain '__' instead of ','](https://github.com/yahoo/fili/pull/76)
